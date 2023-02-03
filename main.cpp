@@ -2,19 +2,26 @@
 #include <ncurses.h>
 #include <fstream>
 #include <cstring>
+#include <unistd.h>
+#include <chrono>
+#include <ctime>
 using namespace std;
 
-void ReadMaze(int **maze);
-void PrintMaze(int **maze,int x, int y);
-int CursLimit(int);
-void Moving(int **maze, int &x, int &y, int &tempX, int &tempY, int maxx, int maxy);
-void WinCheck(int **maze, int, int, bool &exit);
-void FindStart(int **maze, int &x, int &y);
-void DrawFrame();
+void ReadMaze(int **maze);//Wczytywanie z pliku
+void PrintMaze(int **maze,int x, int y);//Wydruk w oknie
+int CursLimit(int);//Blokowanie przed wyjsciem poza tablice maze
+void Moving(int **maze, int &x, int &y, int &tempX, int &tempY, int maxx, int maxy);//Poruszanie sie po polach 1 i blokowanie przez sciany
+void WinCheck(int **maze, int, int, bool &exit, int);//Sprawdzanie czy pole ma wartosc 3 czyli mety oraz zapis do pliku
+void FindStart(int **maze, int &x, int &y);//Znajdowanie startu w zaleznosci od pliku
+void DrawFrame();//Bardzo estetyczna ramka labiryntu
+void Record(int);//Stoper (mega zaawansowany)
 int main(){
 	int **maze;
 	int maxx,maxy,x=0,y=0,tempY=0,tempX=4,switchInput;
+	int sec=0;
 	bool exit=0;
+	int T = std::chrono::seconds(std::time(NULL)).count();
+	int a=0;
 	maze=new int*[19];
 	for(int i=0;i<19;i++)
 		maze[i]=new int[19];
@@ -24,6 +31,8 @@ int main(){
 	timeout(-1);
 	FindStart(maze,x,y);
 		while(!exit){
+		sec=(std::chrono::seconds(std::time(NULL)).count())-T;
+		Record(sec);
 		maxx=(getmaxx(stdscr)/2)-10;
 		maxy=(getmaxy(stdscr)/2)-10;
 		PrintMaze(maze,maxx,maxy);
@@ -44,12 +53,11 @@ int main(){
 		}
 		x=CursLimit(x);
 		y=CursLimit(y);
-		WinCheck(maze,x,y,exit);
+		WinCheck(maze,x,y,exit,sec);
 		clear();
 	}
 	refresh();
 	endwin();
-	cout<<maxx<<" "<<maxy;
 }
 
 void ReadMaze(int **maze){
@@ -113,8 +121,12 @@ int CursLimit(int pos){
 	if(pos>19) pos=19;
 	return pos;
 }
-void WinCheck(int **maze, int x, int y, bool &exit){
+void WinCheck(int **maze, int x, int y, bool &exit, int sec){
 		int exitInput;
+		ofstream file;
+		file.open("bestscore.txt");
+		file<<"Wynik: "<<sec;
+		file.close();
 		if(maze[y][x]==3){
 			mvprintw(20,20,"wygrana, nacisnij q");
 			while(!exit){
@@ -148,4 +160,7 @@ void DrawFrame(){
 			else if(i==maxy-11 || i==maxy+9)
 				mvprintw(i,j," ");
 	attroff(COLOR_PAIR(1));
+}
+void Record(int T){
+		mvprintw(1,1,"%d",T);
 }
